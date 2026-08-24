@@ -1,0 +1,7 @@
+# private scored archive and cached market data
+data/events.csv
+data/cache/
+
+__pycache__/
+*.pyc
+.venv/
