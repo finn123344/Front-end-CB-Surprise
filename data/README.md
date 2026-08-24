@@ -16,6 +16,19 @@ Drop your timestamped scored events here as `data/events.csv`:
 The surprise is computed *from* this file (score minus the speaker's own
 trailing mean), so no surprise column is needed.
 
+## `macro_releases.csv` — optional macro-release calendar
+
+Events landing on a major-release day are flagged and reported separately.
+US nonfarm payrolls is built in (first-Friday rule); add everything else here:
+
+| column | type | notes |
+|---|---|---|
+| `date` | ISO-8601 date | release date |
+| `release` | str | e.g. `US CPI`, `EA flash HICP` |
+
+Sources: [bls.gov/schedule](https://www.bls.gov/schedule/news_release/cpi.htm)
+and the Eurostat release calendar.
+
 ## `cache/` — market data (auto-created, not committed)
 
 `run_study.py` downloads free daily 2y yields on first run and caches them here:

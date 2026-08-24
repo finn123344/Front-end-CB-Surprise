@@ -65,8 +65,11 @@ def summary_chart(results: dict, out_path: str | Path, demo: bool = False) -> Pa
         xs = np.linspace(ev["surprise"].min(), ev["surprise"].max(), 50)
         icept = ev["event_move_bp"].mean() - fit["slope"] * ev["surprise"].mean()
         ax1.plot(xs, fit["slope"] * xs + icept, color=INK, linewidth=2)
-        ax1.annotate(f"slope = {fit['slope']:.1f} bp / unit\nR² = {fit['r2']:.02f}   "
-                     f"n = {fit['n']}",
+        hr = results.get("hit_rate", {})
+        hr_line = (f"\nhit rate = {hr['rate']:.0%}  (p = {hr['p']:.2g})"
+                   if np.isfinite(hr.get("rate", np.nan)) else "")
+        ax1.annotate(f"slope = {fit['slope']:.1f} bp / unit  (t = {fit['t']:.1f})\n"
+                     f"R² = {fit['r2']:.02f}   n = {fit['n']}" + hr_line,
                      xy=(0.03, 0.97), xycoords="axes fraction", va="top",
                      fontsize=10, color=INK)
     ax1.set_xlabel("surprise  (score − speaker's trailing mean)", color=INK2)

@@ -31,22 +31,49 @@ def load_events(path: str) -> pd.DataFrame:
     return ev
 
 
+def _reg_line(label: str, fit: dict) -> str:
+    return (f"| {label} | {fit['n']} | {fit['slope']:.2f} | {fit['se']:.2f} | "
+            f"{fit['t']:.2f} | {fit['r2']:.3f} |")
+
+
 def write_findings(results: dict, qt: pd.DataFrame, path: Path, demo: bool) -> None:
-    fit, pre, post = results["event_day"], results["pre_positioning"], results["post_drift"]
+    hr = results["hit_rate"]
     lines = ["# Findings", ""]
     if demo:
         lines += ["> **SYNTHETIC DEMO DATA** — these numbers exercise the pipeline; "
                   "they are not a result.", ""]
     lines += [
-        f"- Events with a defined surprise: **{results['n_events']}**",
-        f"- Event-day repricing vs surprise: slope **{fit['slope']:.1f} bp/unit**, "
-        f"**R² = {fit['r2']:.3f}** (n = {fit['n']})",
-        f"- Pre-positioning (move over the 5 prior days vs eventual surprise): "
-        f"slope {pre['slope']:.1f} bp/unit, R² = {pre['r2']:.3f}",
-        f"- Post-event drift vs surprise: slope {post['slope']:.1f} bp/unit, "
-        f"R² = {post['r2']:.3f}",
+        f"Events with a defined surprise: **{results['n_events']}** "
+        f"({int(results['events']['macro_day'].sum())} on macro-release days, "
+        f"{int(results['events']['is_decision'].sum())} on scheduled decision days).",
         "",
-        "## Distribution of |event-day move| and quote widths (bp)",
+        "## Does the surprise move the front end?",
+        "",
+        "| sample | n | slope (bp/unit) | HC1 se | t | R² |",
+        "|---|---|---|---|---|---|",
+        _reg_line("event day, all events", results["event_day"]),
+        _reg_line("event day, ex macro-release days", results["event_day_clean"]),
+        _reg_line("event day, speeches only ex macro", results["event_day_speeches"]),
+        _reg_line("pre-window (already in the price)", results["pre_positioning"]),
+        _reg_line("post-event drift", results["post_drift"]),
+        "",
+        f"- Hit rate (sign of move matches sign of surprise): "
+        f"**{hr['rate']:.1%}** of {hr['n']} events, two-sided p = {hr['p']:.2g}.",
+    ]
+    if "placebo" in results:
+        pb = results["placebo"]
+        lines += [
+            f"- Placebo ({pb['n_iter']} draws of random non-event days, same "
+            f"surprises): median placebo R² = {pb['median_r2']:.4f}; fraction of "
+            f"placebos beating the real R² = **{pb['p_value']:.3f}**.",
+        ]
+    lines += [
+        "",
+        "## How wide do you quote? (bp half-widths)",
+        "",
+        "`breakeven` is the always-informed floor E[|move|]; `w(α)` assumes a "
+        "share α of uninformed flow and informed traders who only cross when "
+        "the move clears your width.",
         "",
         qt.to_markdown(index=False),
         "",
@@ -92,9 +119,16 @@ def main() -> None:
 
     fit = results["event_day"]
     print(f"\nevents used: {results['n_events']}")
-    print(f"event-day:  slope {fit['slope']:.2f} bp/unit surprise, R² {fit['r2']:.3f}")
+    print(f"event-day:  slope {fit['slope']:.2f} bp/unit (t {fit['t']:.1f}), "
+          f"R² {fit['r2']:.3f}; hit rate {results['hit_rate']['rate']:.1%} "
+          f"(p {results['hit_rate']['p']:.4f})")
+    print(f"speeches ex-macro: R² {results['event_day_speeches']['r2']:.3f} "
+          f"(t {results['event_day_speeches']['t']:.1f})  — the clean sample")
     print(f"pre-window: R² {results['pre_positioning']['r2']:.3f}  "
           f"(how much was already in the price)")
+    if "placebo" in results:
+        print(f"placebo:    {results['placebo']['p_value']:.3f} of random-day draws "
+              f"beat the real R²")
     print("\nquote widths (bp):")
     print(qt.to_string(index=False))
     print(f"\nchart:    {chart}")

@@ -35,3 +35,7 @@ MARKET_MAP = {
 
 # Roles treated as "chair" for the chair-vs-regional split.
 CHAIR_ROLES = {"chair", "president", "governor_head"}
+
+# Event types that sit on a scheduled decision day, where the presser move is
+# confounded with the statement/decision move. Speeches are the clean sample.
+DECISION_EVENT_TYPES = {"presser", "statement", "decision"}
